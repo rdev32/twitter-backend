@@ -1,0 +1,162 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        Int       @id @default(autoincrement())
+  uuid      String    @unique @default(uuid()) @db.Uuid
+  name      String
+  lastname  String    @map("last_name")
+  email     String    @unique
+  phone     String?   @unique
+  password  String
+  birthday  DateTime?
+  account   Account?
+  country   Country?  @relation(fields: [countryId], references: [uuid])
+  countryId String?   @unique @map("country_id")
+
+  @@map(name: "users")
+}
+
+model Account {
+  id        Int       @id @default(autoincrement())
+  uuid      String    @unique @default(uuid()) @db.Uuid
+  username  String    @unique
+  picture   String?
+  location  String?
+  private   Boolean   @default(false) // private account
+  tos       Boolean   @default(false) // terms of service accepted
+  govt      Boolean   @default(false) // government account
+  ngo       Boolean   @default(false) // non government organization account
+  media     Boolean   @default(false) // news media account
+  business  Boolean   @default(false) // business account
+  createdAt DateTime  @default(now()) @map("created_at")
+  role      Role      @default(USER)
+  posts     Post[]
+  comments  Comment[]
+  tokens    Token[]
+  likes     Like[]
+  user      User      @relation(fields: [userId], references: [uuid])
+  userId    String    @unique @map("user_id")
+
+  @@map(name: "accounts")
+}
+
+model Tag {
+  id        String    @id @default(uuid()) @db.Uuid
+  name      String
+  rank      Int
+  topics    Topic[]
+  country   String
+  trending  Boolean   @default(false)
+  createdAt DateTime  @default(now()) @map("created_at")
+  post      Post[]
+  comment   Comment[]
+
+  @@map(name: "tags")
+}
+
+model Post {
+  id        String    @id @default(uuid()) @db.Uuid
+  content   String
+  files     String[]
+  createdAt DateTime  @default(now()) @map("created_at")
+  likes     Like?
+  comments  Comment[]
+  tag       Tag?      @relation(fields: [tagId], references: [id])
+  tagId     String?   @unique @map("tag_id")
+  account   Account   @relation(fields: [accountId], references: [uuid])
+  accountId String    @unique @map("account_id")
+
+  @@map(name: "posts")
+}
+
+model Comment {
+  id        String   @id @default(uuid()) @db.Uuid
+  content   String
+  files     String[]
+  createdAt DateTime @default(now()) @map("created_at")
+  likes     Like?
+  post      Post     @relation(fields: [postId], references: [id])
+  postId    String   @unique @map("post_id")
+  tag       Tag?     @relation(fields: [tagId], references: [id])
+  tagId     String?  @unique @map("tag_id")
+  account   Account  @relation(fields: [accountId], references: [uuid])
+  accountId String   @unique @map("account_id")
+
+  @@map(name: "comments")
+}
+
+model Like {
+  id        Int      @id @default(autoincrement())
+  account   Account  @relation(fields: [accountId], references: [uuid])
+  accountId String   @unique
+  post      Post?    @relation(fields: [postId], references: [id])
+  postId    String?  @unique @map("post_id")
+  comment   Comment? @relation(fields: [commentId], references: [id])
+  commentId String?  @unique @map("comment_id")
+
+  @@map(name: "likes")
+}
+
+model Token {
+  id        Int      @id @default(autoincrement())
+  uuid      String   @unique @default(uuid()) @db.Uuid
+  jti       String   @unique @default(uuid()) @db.Uuid
+  aud       String?
+  createdAt DateTime @default(now()) @map("created_at")
+  account   Account? @relation(fields: [accountId], references: [uuid])
+  accountId String?  @unique @map("account_id")
+
+  @@map(name: "tokens")
+}
+
+model Country {
+  id        Int    @id @default(autoincrement())
+  uuid      String @unique @default(uuid()) @db.Uuid
+  name      String
+  fullname  String
+  iso       String //iso alpha-3 code
+  numcode   Int    @map("number_code")
+  phonecode Int    @map("phone_code")
+  users     User[]
+
+  @@map(name: "countries")
+}
+
+enum Role {
+  ADMIN
+  USER
+}
+
+enum Permission {
+  READ
+  WRITE
+  TOTAL
+}
+
+enum Topic {
+  ENTERTAINMENT
+  LITERATURE
+  GOVERNMENT
+  EDUCATION
+  DOCTRINE
+  SCIENCE
+  FINANCE
+  MATURE
+  TRAVEL
+  POLITIC
+  HEALTH
+  SPORT
+  MUSIC
+  FOOD
+  TECH
+  NONE
+  ART
+  PET
+}
